@@ -1,4 +1,4 @@
-/*
+﻿/*
  *
  * 音声分析合成法 WORLD by M. Morise
  *
@@ -32,11 +32,15 @@
 #endif
 
 #ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
+// Template rather than macro: the original macro clashed with std::max/std::min
+// in <sstream>/<locale> under a modern libstdc++.
+template <typename T, typename U>
+static inline double max(T a, U b) { double x = (double)a, y = (double)b; return x > y ? x : y; }
 #endif
 
 #ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
+template <typename T, typename U>
+static inline double min(T a, U b) { double x = (double)a, y = (double)b; return x < y ? x : y; }
 #endif
 
 #ifndef __GNUC__

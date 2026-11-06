@@ -1,4 +1,4 @@
-/*
+﻿/*
  * EncodingConverter.h
  * Copyright © 2012 kbinani
  *
@@ -84,7 +84,12 @@ namespace vconnect
 
             while( remainingInputBytes > 0 ){
                 char const* originalInput = input;
-                size_t n = iconv( this->converter, &input, &remainingInputBytes, &output, &remainingOutputBytes );
+                // iconv advances its input pointer; a const_cast here is the standard
+                // way to satisfy glibc's non-const char** signature. iconv never
+                // writes through it, and `input` is a pointer into source.c_str().
+                char* inputPtr = const_cast<char*>(input);
+                size_t n = iconv( this->converter, &inputPtr, &remainingInputBytes, &output, &remainingOutputBytes );
+                input = inputPtr;
                 int error = errno;
                 if( (n != (size_t) - 1 && remainingInputBytes == 0) || (error == EINVAL) ){
                     remainingInputBytes = 0;

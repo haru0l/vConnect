@@ -212,6 +212,23 @@ int    WaveBuffer::writeWaveFile(const string &fileName, const double *wave, int
         format = &DefaultFormat;
     }
 
+    /* A negative secOffset means the head of `wave` lies before the output
+       timeline. Dropping it is the only correct response: the old cast to
+       unsigned int wrapped to ~4.3 billion, and the zero-fill loop that
+       followed walked off unmapped memory under -O3's memset vectorization
+       (SIGSEGV in __memset_avx2_unaligned_erms). */
+    long long offsetL = (long long)( secOffset * format->samplePerSecond + ( secOffset >= 0 ? 0.5 : -0.5 ) );
+    if( offsetL < 0 )
+    {
+        wave += -offsetL;
+        length += (int)offsetL;
+        offsetL = 0;
+    }
+    if( length <= 0 )
+    {
+        return 0;
+    }
+
 #ifdef __GNUC__
     fp = fopen( fileName.c_str(), "wb" );
 #else
@@ -222,7 +239,7 @@ int    WaveBuffer::writeWaveFile(const string &fileName, const double *wave, int
     {
         /* This code may occur an error on big-endian CPU. */
         /* write Header */
-        unsigned int offset = (unsigned int)(secOffset * format->samplePerSecond);
+        unsigned int offset = (unsigned int)offsetL;
         unsigned int waveSize = (offset + length) * ( format->bitsPerSample / 8 ) * format->numChannels;
         unsigned int fileSize = waveSize + 44;
         unsigned int chunkSize = 16;
